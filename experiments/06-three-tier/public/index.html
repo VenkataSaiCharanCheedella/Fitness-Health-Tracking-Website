@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FitLife — Team Workouts (Node.js + MySQL)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topnav">
+    <div class="brand"><span class="logo-mark">F</span> FitLife <span class="muted-dark">Team</span></div>
+    <div class="tier-badges">
+      <span>Presentation: HTML + JS</span>
+      <span>Application: Node.js + Express</span>
+      <span id="dbBadge">Data: MySQL</span>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Team workouts</h1>
+        <p class="page-subtitle">Every number on this page comes from the MySQL database through the Express API.</p>
+      </div>
+    </div>
+
+    <div class="stats" id="totals"></div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h2 class="card-title">Workout log</h2>
+        <table>
+          <thead><tr><th>Date</th><th>Member</th><th>Workout</th><th>Intensity</th><th class="num">Min</th><th class="num">kcal</th><th></th></tr></thead>
+          <tbody id="workoutRows"><tr><td colspan="7" class="muted">Loading...</td></tr></tbody>
+        </table>
+      </div>
+
+      <div>
+        <form class="card" id="workoutForm" novalidate>
+          <h2 class="card-title">Log a workout</h2>
+          <div class="form-alert" id="formAlert"></div>
+          <label class="form-label" for="member">Member</label>
+          <select class="form-input" id="member"></select>
+          <label class="form-label" for="type">Workout</label>
+          <input class="form-input" id="type" placeholder="e.g. Running" />
+          <div class="form-row">
+            <div><label class="form-label" for="duration">Minutes</label><input class="form-input" id="duration" type="number" min="1" /></div>
+            <div><label class="form-label" for="calories">kcal</label><input class="form-input" id="calories" type="number" min="0" /></div>
+          </div>
+          <label class="form-label" for="intensity">Intensity</label>
+          <select class="form-input" id="intensity"><option>Low</option><option selected>Medium</option><option>High</option></select>
+          <button class="btn btn-primary btn-full" type="submit">Save to database</button>
+        </form>
+
+        <div class="card" style="margin-top:1.25rem;">
+          <h2 class="card-title">Calories by member</h2>
+          <div id="byMember"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    async function api(path, options = {}) {
+      const res = await fetch('/api' + path, { headers: { 'Content-Type': 'application/json' }, ...options });
+      const body = res.status === 204 ? null : await res.json();
+      if (!res.ok) throw new Error((body && body.errors || ['Request failed']).join(', '));
+      return body;
+    }
+
+    async function loadAll() {
+      const [health, members, workouts, stats] = await Promise.all([
+        api('/health'), api('/members'), api('/workouts'), api('/stats')
+      ]);
+
+      $('dbBadge').textContent = 'Data: ' + health.database;
+
+      $('member').innerHTML = members.map(m => `<option value="${m.id}">${esc(m.name)}</option>`).join('');
+
+      const t = stats.totals;
+      $('totals').innerHTML = `
+        <div class="card stat"><span>Workouts</span><strong>${t.workouts}</strong></div>
+        <div class="card stat"><span>Total minutes</span><strong>${Number(t.minutes)}</strong></div>
+        <div class="card stat"><span>Calories burned</span><strong>${Number(t.calories).toLocaleString()}</strong></div>
+        <div class="card stat"><span>Members</span><strong>${members.length}</strong></div>`;
+
+      $('workoutRows').innerHTML = workouts.map(w => `
+        <tr>
+          <td>${w.logged_on}</td><td>${esc(w.member)}</td><td>${esc(w.type)}</td>
+          <td><span class="tag ${w.intensity}">${w.intensity}</span></td>
+          <td class="num">${w.duration}</td><td class="num">${w.calories}</td>
+          <td><button class="del" data-id="${w.id}" title="Delete">✕</button></td>
+        </tr>`).join('') || '<tr><td colspan="7" class="muted">No workouts yet.</td></tr>';
+
+      const max = Math.max(...stats.byMember.map(m => Number(m.calories)), 1);
+      $('byMember').innerHTML = stats.byMember.map(m => `
+        <div class="bar-row">
+          <span class="name">${esc(m.name)}</span>
+          <span class="bar"><i style="width:${Number(m.calories) / max * 100}%"></i></span>
+          <span class="val">${Number(m.calories)} kcal</span>
+        </div>`).join('');
+    }
+
+    $('workoutForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const alert = $('formAlert');
+      try {
+        await api('/workouts', {
+          method: 'POST',
+          body: JSON.stringify({
+            memberId: Number($('member').value), type: $('type').value,
+            duration: Number($('duration').value), calories: Number($('calories').value || 0),
+            intensity: $('intensity').value
+          })
+        });
+        alert.className = 'form-alert success';
+        alert.textContent = 'Saved to MySQL.';
+        $('type').value = $('duration').value = $('calories').value = '';
+        loadAll();
+      } catch (err) {
+        alert.className = 'form-alert error';
+        alert.textContent = err.message;
+      }
+    });
+
+    $('workoutRows').addEventListener('click', async (e) => {
+      const btn = e.target.closest('.del');
+      if (!btn) return;
+      await api('/workouts/' + btn.dataset.id, { method: 'DELETE' });
+      loadAll();
+    });
+
+    loadAll().catch(err => { $('workoutRows').innerHTML = `<tr><td colspan="7">${esc(err.message)}</td></tr>`; });
+  </script>
+</body>
+</html>

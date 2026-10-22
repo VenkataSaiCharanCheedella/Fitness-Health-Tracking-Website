@@ -1,0 +1,36 @@
+# Container deployment of the FitLife microservices
+#   docker compose up --build
+# Then open http://localhost:4000
+services:
+  user-service:
+    build: { context: ., args: { SERVICE_FILE: services/user-service.js } }
+    environment: { PORT: "4001" }
+    restart: unless-stopped
+
+  workout-service:
+    build: { context: ., args: { SERVICE_FILE: services/workout-service.js } }
+    environment:
+      PORT: "4002"
+      USER_SERVICE_URL: http://user-service:4001
+    depends_on: [user-service]
+    restart: unless-stopped
+
+  stats-service:
+    build: { context: ., args: { SERVICE_FILE: services/stats-service.js } }
+    environment:
+      PORT: "4003"
+      USER_SERVICE_URL: http://user-service:4001
+      WORKOUT_SERVICE_URL: http://workout-service:4002
+    depends_on: [user-service, workout-service]
+    restart: unless-stopped
+
+  gateway:
+    build: { context: ., args: { SERVICE_FILE: gateway/gateway.js } }
+    environment:
+      PORT: "4000"
+      USER_SERVICE_URL: http://user-service:4001
+      WORKOUT_SERVICE_URL: http://workout-service:4002
+      STATS_SERVICE_URL: http://stats-service:4003
+    ports: ["4000:4000"]
+    depends_on: [user-service, workout-service, stats-service]
+    restart: unless-stopped

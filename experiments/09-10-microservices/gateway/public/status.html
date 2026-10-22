@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FitLife — Deployment Status</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topnav">
+    <div class="brand"><span class="logo-mark">F</span> FitLife</div>
+    <nav><a href="index.html">App</a><a href="status.html" class="active">Deployment status</a></nav>
+  </header>
+
+  <main class="container">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Deployment status</h1>
+        <p class="page-subtitle">Live health of every deployed service, refreshed every 2 seconds.</p>
+      </div>
+      <span class="muted" id="summary"></span>
+    </div>
+
+    <div class="card" style="margin-bottom:1.25rem;">
+      <div class="arch">
+        <span class="box">Browser</span><span class="arrow">→</span>
+        <span class="box">API gateway :4000</span><span class="arrow">→</span>
+        <span class="box">user-service :4001</span>
+        <span class="box">workout-service :4002</span>
+        <span class="box">stats-service :4003</span>
+      </div>
+    </div>
+
+    <div class="grid-4" id="services"></div>
+    <p class="muted" style="margin-top:1rem; font-size:0.85rem;" id="checked"></p>
+  </main>
+
+  <script>
+    const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const fmtUptime = s => s == null ? '—' : s < 60 ? s + ' s' : Math.floor(s / 60) + ' min ' + (s % 60) + ' s';
+
+    function card(name, d) {
+      const up = d.status === 'up';
+      return `
+        <div class="card svc ${up ? '' : 'down'}">
+          <div class="svc-name">${esc(name)} <span class="tag ${up ? 'up' : 'down'}"><span class="dot ${up ? '' : 'down'}"></span>${up ? 'Running' : 'Down'}</span></div>
+          <div class="kv"><span>Port</span><span>${d.port ?? '—'}</span></div>
+          <div class="kv"><span>Process ID</span><span>${d.pid ?? '—'}</span></div>
+          <div class="kv"><span>Uptime</span><span>${fmtUptime(d.uptimeSeconds)}</span></div>
+          <div class="kv"><span>Requests served</span><span>${d.requestsServed ?? '—'}</span></div>
+          <div class="kv"><span>Health check</span><span>${d.responseMs != null ? d.responseMs + ' ms' : '—'}</span></div>
+        </div>`;
+    }
+
+    async function refresh() {
+      try {
+        const s = await (await fetch('/api/status')).json();
+        const g = s.gateway;
+        const cards = [card('API gateway', { ...g, requestsServed: null, responseMs: null })]
+          .concat(s.services.map(x => card(x.name, x)));
+        document.getElementById('services').innerHTML = cards.join('');
+        const upCount = s.services.filter(x => x.status === 'up').length + 1;
+        document.getElementById('summary').textContent = `${upCount} of ${s.services.length + 1} services running`;
+        document.getElementById('checked').textContent = 'Last checked: ' + new Date(s.checkedAt).toLocaleTimeString();
+      } catch {
+        document.getElementById('summary').textContent = 'Gateway is not reachable';
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 2000);
+  </script>
+</body>
+</html>

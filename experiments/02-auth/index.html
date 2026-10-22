@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FitLife — Sign up or Log in</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../style.css" />
+  <style>
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1.5rem; }
+
+    .auth-box { width: min(440px, 100%); }
+
+    .auth-brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      font-size: 1.3rem;
+      font-weight: 800;
+      margin-bottom: 1.5rem;
+    }
+    .auth-brand .logo-mark { background: var(--brand); color: #fff; }
+
+    .auth-title { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; }
+    .auth-sub   { color: var(--text-2); margin: 0.25rem 0 1.25rem; font-size: 0.92rem; }
+
+    .form-input.invalid { border-color: var(--danger); }
+    .form-input.invalid:focus { box-shadow: 0 0 0 3px rgba(180,35,24,0.15); }
+    .form-input.valid { border-color: var(--brand); }
+
+    .field-error { color: var(--danger); font-size: 0.8rem; margin-top: 0.35rem; min-height: 1em; }
+
+    .strength { display: flex; gap: 4px; margin-top: 0.45rem; }
+    .strength span { flex: 1; height: 4px; border-radius: 2px; background: #efece6; }
+    .strength.s1 span:nth-child(1) { background: var(--danger); }
+    .strength.s2 span:nth-child(-n+2) { background: var(--amber); }
+    .strength.s3 span { background: var(--brand); }
+    .strength-label { font-size: 0.78rem; color: var(--text-3); margin-top: 0.25rem; }
+
+    .form-alert {
+      display: none;
+      padding: 0.7rem 0.9rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      margin-bottom: 1rem;
+    }
+    .form-alert.error   { display: block; background: var(--danger-soft); color: var(--danger); }
+    .form-alert.success { display: block; background: var(--brand-soft); color: var(--brand); }
+
+    .switch-text { text-align: center; font-size: 0.88rem; color: var(--text-2); margin-top: 1rem; }
+    .link-btn { background: none; border: none; color: var(--brand); font-weight: 600; cursor: pointer; font-size: inherit; }
+
+    .welcome { text-align: center; padding: 1rem 0; }
+    .welcome .avatar-display { margin: 0 auto 1rem; }
+  </style>
+</head>
+<body>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-logo" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></symbol>
+  </svg>
+
+  <div class="auth-box">
+    <div class="auth-brand">
+      <span class="logo-mark"><svg class="icon"><use href="#i-logo"/></svg></span>
+      FitLife
+    </div>
+
+    <div class="card">
+      <div class="segmented" style="margin-bottom:1.25rem;">
+        <button type="button" class="seg-btn active" id="tabSignup">Sign up</button>
+        <button type="button" class="seg-btn" id="tabLogin">Log in</button>
+      </div>
+
+      <!-- ===== SIGN UP ===== -->
+      <form id="signupForm" novalidate>
+        <h1 class="auth-title">Create your account</h1>
+        <p class="auth-sub">Start tracking workouts, meals, water and sleep.</p>
+        <div class="form-alert" id="signupAlert"></div>
+
+        <div class="form-group">
+          <label class="form-label" for="suName">Full name</label>
+          <input class="form-input" id="suName" type="text" placeholder="Alex Kumar" autocomplete="name" />
+          <div class="field-error" id="suNameErr"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="suEmail">Email</label>
+          <input class="form-input" id="suEmail" type="email" placeholder="alex@example.com" autocomplete="email" />
+          <div class="field-error" id="suEmailErr"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="suPassword">Password</label>
+          <input class="form-input" id="suPassword" type="password" placeholder="At least 8 characters" autocomplete="new-password" />
+          <div class="strength" id="strengthBar"><span></span><span></span><span></span></div>
+          <div class="strength-label" id="strengthLabel">Use 8+ characters with letters and numbers</div>
+          <div class="field-error" id="suPasswordErr"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="suConfirm">Confirm password</label>
+          <input class="form-input" id="suConfirm" type="password" placeholder="Re-enter password" autocomplete="new-password" />
+          <div class="field-error" id="suConfirmErr"></div>
+        </div>
+        <button class="btn btn-primary btn-full" type="submit">Create account</button>
+        <p class="switch-text">Already have an account? <button type="button" class="link-btn" data-switch="login">Log in</button></p>
+      </form>
+
+      <!-- ===== LOG IN ===== -->
+      <form id="loginForm" novalidate hidden>
+        <h1 class="auth-title">Welcome back</h1>
+        <p class="auth-sub">Log in to see your health dashboard.</p>
+        <div class="form-alert" id="loginAlert"></div>
+
+        <div class="form-group">
+          <label class="form-label" for="liEmail">Email</label>
+          <input class="form-input" id="liEmail" type="email" placeholder="alex@example.com" autocomplete="email" />
+          <div class="field-error" id="liEmailErr"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="liPassword">Password</label>
+          <input class="form-input" id="liPassword" type="password" placeholder="Your password" autocomplete="current-password" />
+          <div class="field-error" id="liPasswordErr"></div>
+        </div>
+        <button class="btn btn-primary btn-full" type="submit">Log in</button>
+        <p class="switch-text">New to FitLife? <button type="button" class="link-btn" data-switch="signup">Create an account</button></p>
+      </form>
+
+      <!-- ===== LOGGED IN ===== -->
+      <div class="welcome" id="welcomePanel" hidden>
+        <div class="avatar-display" id="welcomeAvatar">A</div>
+        <h1 class="auth-title">Hi, <span id="welcomeName"></span></h1>
+        <p class="auth-sub">You are logged in as <strong id="welcomeEmail"></strong></p>
+        <a class="btn btn-primary btn-full" href="../../index.html">Go to dashboard</a>
+        <button class="btn btn-ghost btn-full" id="logoutBtn" style="margin-top:0.5rem;">Log out</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ===================================================
+       FitLife — Signup, Login and Form Validation
+       Accounts are kept in localStorage for this demo.
+       Passwords are never stored as plain text: we keep
+       a SHA-256 hash of (email + password).
+       =================================================== */
+
+    const $ = id => document.getElementById(id);
+
+    // ─────────────────────────────────────────────────
+    //  1. STORAGE HELPERS
+    // ─────────────────────────────────────────────────
+    function getUsers() {
+      try { return JSON.parse(localStorage.getItem('fitlife_users')) || []; }
+      catch (e) { return []; }
+    }
+
+    function saveUsers(users) {
+      localStorage.setItem('fitlife_users', JSON.stringify(users));
+    }
+
+    async function hashPassword(email, password) {
+      const data = new TextEncoder().encode(email.toLowerCase() + ':' + password);
+      const buf  = await crypto.subtle.digest('SHA-256', data);
+      return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // ─────────────────────────────────────────────────
+    //  2. VALIDATION RULES
+    //  Each rule returns an error message, or '' if valid
+    // ─────────────────────────────────────────────────
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+    const rules = {
+      name(v) {
+        if (!v.trim()) return 'Please enter your name';
+        if (v.trim().length < 2) return 'Name must be at least 2 characters';
+        if (!/^[A-Za-z][A-Za-z .'-]*$/.test(v.trim())) return 'Name can only contain letters and spaces';
+        return '';
+      },
+      email(v) {
+        if (!v.trim()) return 'Please enter your email';
+        if (!EMAIL_RE.test(v.trim())) return 'Enter a valid email, like name@example.com';
+        return '';
+      },
+      password(v) {
+        if (!v) return 'Please enter a password';
+        if (v.length < 8) return 'Password must be at least 8 characters';
+        if (!/[A-Za-z]/.test(v) || !/\d/.test(v)) return 'Password must contain letters and numbers';
+        return '';
+      },
+      confirm(v) {
+        if (!v) return 'Please confirm your password';
+        if (v !== $('suPassword').value) return 'Passwords do not match';
+        return '';
+      }
+    };
+
+    // Show or clear the error for one field
+    function setFieldState(input, message) {
+      $(input.id + 'Err').textContent = message;
+      input.classList.toggle('invalid', !!message);
+      input.classList.toggle('valid', !message && input.value !== '');
+      return !message;
+    }
+
+    function passwordStrength(v) {
+      let score = 0;
+      if (v.length >= 8) score++;
+      if (/[A-Za-z]/.test(v) && /\d/.test(v)) score++;
+      if (v.length >= 12 || /[^A-Za-z0-9]/.test(v)) score++;
+      return v ? Math.max(score, 1) : 0;
+    }
+
+    function showAlert(id, type, message) {
+      const el = $(id);
+      el.className = 'form-alert ' + type;
+      el.textContent = message;
+    }
+
+    function clearAlert(id) { $(id).className = 'form-alert'; }
+
+    // ─────────────────────────────────────────────────
+    //  3. LIVE VALIDATION WHILE TYPING
+    // ─────────────────────────────────────────────────
+    const signupFields = [
+      [$('suName'), rules.name],
+      [$('suEmail'), rules.email],
+      [$('suPassword'), rules.password],
+      [$('suConfirm'), rules.confirm]
+    ];
+
+    signupFields.forEach(([input, rule]) => {
+      // Validate when the user leaves a field, then on every keystroke after that
+      input.addEventListener('blur', () => { input.dataset.touched = '1'; setFieldState(input, rule(input.value)); });
+      input.addEventListener('input', () => { if (input.dataset.touched) setFieldState(input, rule(input.value)); });
+    });
+
+    $('suPassword').addEventListener('input', (e) => {
+      const s = passwordStrength(e.target.value);
+      $('strengthBar').className = 'strength' + (s ? ' s' + s : '');
+      $('strengthLabel').textContent = ['Use 8+ characters with letters and numbers', 'Weak password', 'Fair password', 'Strong password'][s];
+      if ($('suConfirm').dataset.touched) setFieldState($('suConfirm'), rules.confirm($('suConfirm').value));
+    });
+
+    // ─────────────────────────────────────────────────
+    //  4. SIGN UP
+    // ─────────────────────────────────────────────────
+    $('signupForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAlert('signupAlert');
+
+      // Validate every field (not just the first invalid one) so all errors show at once
+      let allValid = true;
+      signupFields.forEach(([input, rule]) => {
+        input.dataset.touched = '1';
+        if (!setFieldState(input, rule(input.value))) allValid = false;
+      });
+      if (!allValid) {
+        showAlert('signupAlert', 'error', 'Please fix the highlighted fields.');
+        return;
+      }
+
+      const email = $('suEmail').value.trim().toLowerCase();
+      const users = getUsers();
+      if (users.some(u => u.email === email)) {
+        setFieldState($('suEmail'), 'An account with this email already exists');
+        return;
+      }
+
+      users.push({
+        name:         $('suName').value.trim(),
+        email,
+        passwordHash: await hashPassword(email, $('suPassword').value),
+        createdAt:    new Date().toISOString()
+      });
+      saveUsers(users);
+
+      $('signupForm').reset();
+      signupFields.forEach(([input]) => { delete input.dataset.touched; input.classList.remove('valid', 'invalid'); });
+      $('strengthBar').className = 'strength';
+
+      switchTab('login');
+      $('liEmail').value = email;
+      showAlert('loginAlert', 'success', 'Account created. Please log in.');
+    });
+
+    // ─────────────────────────────────────────────────
+    //  5. LOG IN
+    // ─────────────────────────────────────────────────
+    $('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAlert('loginAlert');
+
+      const emailOk = setFieldState($('liEmail'), rules.email($('liEmail').value));
+      const passOk  = setFieldState($('liPassword'), $('liPassword').value ? '' : 'Please enter your password');
+      if (!emailOk || !passOk) return;
+
+      const email = $('liEmail').value.trim().toLowerCase();
+      const user  = getUsers().find(u => u.email === email);
+      const hash  = await hashPassword(email, $('liPassword').value);
+
+      // Same message for unknown email and wrong password, so attackers can't tell which
+      if (!user || user.passwordHash !== hash) {
+        showAlert('loginAlert', 'error', 'Incorrect email or password.');
+        $('liPassword').value = '';
+        return;
+      }
+
+      sessionStorage.setItem('fitlife_session', email);
+      showWelcome(user);
+    });
+
+    // ─────────────────────────────────────────────────
+    //  6. TABS, SESSION AND LOGOUT
+    // ─────────────────────────────────────────────────
+    function switchTab(tab) {
+      $('signupForm').hidden = tab !== 'signup';
+      $('loginForm').hidden  = tab !== 'login';
+      $('welcomePanel').hidden = true;
+      $('tabSignup').classList.toggle('active', tab === 'signup');
+      $('tabLogin').classList.toggle('active', tab === 'login');
+    }
+
+    function showWelcome(user) {
+      $('signupForm').hidden = true;
+      $('loginForm').hidden = true;
+      $('welcomePanel').hidden = false;
+      $('welcomeName').textContent  = user.name.split(' ')[0];
+      $('welcomeEmail').textContent = user.email;
+      $('welcomeAvatar').textContent = user.name.charAt(0).toUpperCase();
+    }
+
+    $('tabSignup').addEventListener('click', () => switchTab('signup'));
+    $('tabLogin').addEventListener('click', () => switchTab('login'));
+    document.querySelectorAll('[data-switch]').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.switch)));
+
+    $('logoutBtn').addEventListener('click', () => {
+      sessionStorage.removeItem('fitlife_session');
+      $('loginForm').reset();
+      clearAlert('loginAlert');
+      switchTab('login');
+    });
+
+    // Stay logged in for this browser tab
+    const sessionEmail = sessionStorage.getItem('fitlife_session');
+    const sessionUser  = sessionEmail && getUsers().find(u => u.email === sessionEmail);
+    if (sessionUser) showWelcome(sessionUser);
+  </script>
+</body>
+</html>

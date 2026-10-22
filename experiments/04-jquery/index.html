@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FitLife — Workout Log (jQuery &amp; DOM)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../style.css" />
+  <style>
+    .main-content { margin-left: 0; max-width: 1200px; margin-inline: auto; }
+    .toolbar { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+    .toolbar .segmented { flex: 0 0 auto; }
+    .toolbar .form-input { max-width: 240px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th { text-align: left; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); padding: 0.6rem 0.5rem; border-bottom: 1px solid var(--border); }
+    td { padding: 0.7rem 0.5rem; border-bottom: 1px solid var(--border); }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    tbody tr { cursor: pointer; transition: background 0.15s; }
+    tbody tr:hover { background: var(--surface-2); }
+    tbody tr.selected { background: var(--brand-soft); }
+    .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; margin-bottom: 1rem; }
+    .summary-grid div { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.7rem 0.8rem; }
+    .summary-grid span { display: block; font-size: 0.75rem; color: var(--text-3); }
+    .summary-grid strong { font-size: 1.2rem; }
+    .type-row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.86rem; margin-bottom: 0.45rem; }
+    .type-row .name { width: 110px; }
+    .type-row .bar { flex: 1; height: 8px; background: #efece6; border-radius: 4px; overflow: hidden; }
+    .type-row .bar i { display: block; height: 100%; background: var(--brand); }
+    .type-row .val { width: 60px; text-align: right; color: var(--text-2); font-variant-numeric: tabular-nums; }
+    pre.json { background: var(--side-bg); color: #d6e4dc; padding: 0.9rem; border-radius: var(--radius-sm); font-size: 0.75rem; max-height: 220px; overflow: auto; }
+    .add-form { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr auto; gap: 0.5rem; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <main class="main-content">
+    <div class="page-header">
+      <div>
+        <p class="page-eyebrow">Experiment 4 · jQuery and DOM</p>
+        <h1 class="page-title">Workout log</h1>
+        <p class="page-subtitle">The table below is plain HTML. jQuery reads (parses) it, then builds the summary, filters and details.</p>
+      </div>
+    </div>
+
+    <div class="dashboard-grid wide-left">
+      <div class="card">
+        <div class="toolbar">
+          <div class="segmented" id="intensityFilter">
+            <button class="seg-btn active" data-filter="All">All</button>
+            <button class="seg-btn" data-filter="Low">Low</button>
+            <button class="seg-btn" data-filter="Medium">Medium</button>
+            <button class="seg-btn" data-filter="High">High</button>
+          </div>
+          <input class="form-input" id="search" placeholder="Search workouts..." />
+          <span class="muted-text" id="showingText"></span>
+        </div>
+
+        <table id="workoutTable">
+          <thead>
+            <tr><th>Date</th><th>Workout</th><th>Intensity</th><th class="num">Minutes</th><th class="num">kcal</th></tr>
+          </thead>
+          <tbody>
+            <!-- Each row carries its data in data-* attributes that jQuery parses -->
+            <tr data-id="1" data-date="2026-10-22" data-type="Running" data-intensity="High" data-minutes="35" data-calories="380">
+              <td>Oct 22</td><td>Running</td><td><span class="tag High">High</span></td><td class="num">35</td><td class="num">380</td></tr>
+            <tr data-id="2" data-date="2026-10-21" data-type="Weight Training" data-intensity="Medium" data-minutes="50" data-calories="300">
+              <td>Oct 21</td><td>Weight Training</td><td><span class="tag Medium">Medium</span></td><td class="num">50</td><td class="num">300</td></tr>
+            <tr data-id="3" data-date="2026-10-20" data-type="Yoga" data-intensity="Low" data-minutes="30" data-calories="120">
+              <td>Oct 20</td><td>Yoga</td><td><span class="tag Low">Low</span></td><td class="num">30</td><td class="num">120</td></tr>
+            <tr data-id="4" data-date="2026-10-19" data-type="Running" data-intensity="Medium" data-minutes="40" data-calories="420">
+              <td>Oct 19</td><td>Running</td><td><span class="tag Medium">Medium</span></td><td class="num">40</td><td class="num">420</td></tr>
+            <tr data-id="5" data-date="2026-10-18" data-type="Cycling" data-intensity="High" data-minutes="45" data-calories="410">
+              <td>Oct 18</td><td>Cycling</td><td><span class="tag High">High</span></td><td class="num">45</td><td class="num">410</td></tr>
+            <tr data-id="6" data-date="2026-10-17" data-type="Walking" data-intensity="Low" data-minutes="60" data-calories="240">
+              <td>Oct 17</td><td>Walking</td><td><span class="tag Low">Low</span></td><td class="num">60</td><td class="num">240</td></tr>
+          </tbody>
+        </table>
+
+        <form class="add-form" id="addForm">
+          <input class="form-input" id="newType" placeholder="Workout (e.g. Swimming)" />
+          <select class="form-input form-select" id="newIntensity"><option>Low</option><option selected>Medium</option><option>High</option></select>
+          <input class="form-input" id="newMinutes" type="number" min="1" placeholder="Minutes" />
+          <input class="form-input" id="newCalories" type="number" min="0" placeholder="kcal" />
+          <button class="btn btn-primary" type="submit">Add row</button>
+        </form>
+      </div>
+
+      <div>
+        <div class="card" style="margin-bottom:1.25rem;">
+          <h2 class="card-title" style="margin-bottom:0.9rem;">Summary (parsed from the table)</h2>
+          <div class="summary-grid">
+            <div><span>Workouts</span><strong id="sumCount">0</strong></div>
+            <div><span>Total minutes</span><strong id="sumMinutes">0</strong></div>
+            <div><span>Calories burned</span><strong id="sumCalories">0</strong></div>
+            <div><span>Avg kcal / min</span><strong id="sumRate">0</strong></div>
+          </div>
+          <h3 class="card-subtitle" style="margin-bottom:0.6rem;">Minutes by workout type</h3>
+          <div id="typeBreakdown"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header" style="margin-bottom:0.6rem;">
+            <h2 class="card-title">Parsed data</h2>
+            <button class="btn btn-secondary btn-sm" id="showJson">Show JSON</button>
+          </div>
+          <p class="muted-text" id="selectedText">Click a row to select it.</p>
+          <pre class="json" id="jsonOut" hidden></pre>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script>
+    /* ===================================================
+       Experiment 4 — Parse the webpage using jQuery and DOM
+       =================================================== */
+    $(function () {
+      let activeFilter = 'All';
+
+      // ── 1. PARSE: read every table row into a plain JavaScript object
+      function parseRows() {
+        return $('#workoutTable tbody tr').map(function () {
+          const $row = $(this);
+          return {
+            id:        Number($row.data('id')),
+            date:      $row.data('date'),
+            type:      $row.data('type'),
+            intensity: $row.data('intensity'),
+            minutes:   Number($row.data('minutes')),
+            calories:  Number($row.data('calories'))
+          };
+        }).get();
+      }
+
+      // ── 2. BUILD: compute totals and write them back into the page
+      function renderSummary() {
+        const rows     = parseRows();
+        const minutes  = rows.reduce((s, r) => s + r.minutes, 0);
+        const calories = rows.reduce((s, r) => s + r.calories, 0);
+
+        $('#sumCount').text(rows.length);
+        $('#sumMinutes').text(minutes);
+        $('#sumCalories').text(calories.toLocaleString());
+        $('#sumRate').text(minutes ? (calories / minutes).toFixed(1) : 0);
+
+        // Group minutes by type and draw a simple bar for each
+        const byType = {};
+        rows.forEach(r => { byType[r.type] = (byType[r.type] || 0) + r.minutes; });
+        const max = Math.max(...Object.values(byType), 1);
+
+        const $list = $('#typeBreakdown').empty();
+        Object.entries(byType).sort((a, b) => b[1] - a[1]).forEach(([type, mins]) => {
+          $('<div class="type-row">')
+            .append($('<span class="name">').text(type))
+            .append($('<span class="bar">').append($('<i>').css('width', (mins / max * 100) + '%')))
+            .append($('<span class="val">').text(mins + ' min'))
+            .appendTo($list);
+        });
+
+        console.table(rows);
+        return rows;
+      }
+
+      // ── 3. FILTER: intensity buttons + text search, using show()/hide()
+      function applyFilters() {
+        const query = $('#search').val().trim().toLowerCase();
+        let visible = 0;
+
+        $('#workoutTable tbody tr').each(function () {
+          const $row = $(this);
+          const matchIntensity = activeFilter === 'All' || $row.data('intensity') === activeFilter;
+          const matchText      = $row.text().toLowerCase().includes(query);
+          const show = matchIntensity && matchText;
+          $row.toggle(show);
+          if (show) visible++;
+        });
+
+        $('#showingText').text(`Showing ${visible} of ${$('#workoutTable tbody tr').length}`);
+      }
+
+      $('#intensityFilter').on('click', '.seg-btn', function () {
+        $(this).addClass('active').siblings().removeClass('active');
+        activeFilter = $(this).data('filter');
+        applyFilters();
+      });
+
+      $('#search').on('input', applyFilters);
+
+      // ── 4. SELECT: event delegation, so rows added later also respond
+      $('#workoutTable tbody').on('click', 'tr', function () {
+        $(this).addClass('selected').siblings().removeClass('selected');
+        const d = $(this).data();
+        $('#selectedText').html(
+          `<strong>${$('<i>').text(d.type).html()}</strong> on ${d.date}: ${d.minutes} min, ${d.calories} kcal ` +
+          `(${(d.calories / d.minutes).toFixed(1)} kcal/min)`
+        );
+      });
+
+      // ── 5. SHOW the parsed objects as JSON
+      $('#showJson').on('click', function () {
+        const $pre = $('#jsonOut');
+        $pre.text(JSON.stringify(parseRows(), null, 2)).prop('hidden', !$pre.prop('hidden'));
+        $(this).text($pre.prop('hidden') ? 'Show JSON' : 'Hide JSON');
+      });
+
+      // ── 6. ADD: create a new row in the DOM, then re-parse
+      $('#addForm').on('submit', function (e) {
+        e.preventDefault();
+        const type     = $('#newType').val().trim();
+        const minutes  = parseInt($('#newMinutes').val(), 10);
+        const calories = parseInt($('#newCalories').val(), 10) || 0;
+        const intensity = $('#newIntensity').val();
+        if (!type || !minutes || minutes < 1) { $('#newType').trigger('focus'); return; }
+
+        const nextId = Math.max(0, ...parseRows().map(r => r.id)) + 1;
+        const today  = new Date();
+        const key    = today.toISOString().slice(0, 10);
+        const label  = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+        $('<tr>')
+          .attr({ 'data-id': nextId, 'data-date': key, 'data-type': type, 'data-intensity': intensity,
+                  'data-minutes': minutes, 'data-calories': calories })
+          .append($('<td>').text(label), $('<td>').text(type),
+                  $('<td>').append($('<span>').addClass('tag ' + intensity).text(intensity)),
+                  $('<td class="num">').text(minutes), $('<td class="num">').text(calories))
+          .hide().prependTo('#workoutTable tbody').fadeIn(300);
+
+        this.reset();
+        renderSummary();
+        applyFilters();
+      });
+
+      renderSummary();
+      applyFilters();
+    });
+  </script>
+</body>
+</html>

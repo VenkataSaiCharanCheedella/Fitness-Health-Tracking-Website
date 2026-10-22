@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FitLife — Microservices</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topnav">
+    <div class="brand"><span class="logo-mark">F</span> FitLife</div>
+    <nav><a href="index.html" class="active">App</a><a href="status.html">Deployment status</a></nav>
+  </header>
+
+  <main class="container">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Team fitness</h1>
+        <p class="page-subtitle">Each card is filled by a different microservice, reached through the API gateway on port 4000.</p>
+      </div>
+    </div>
+
+    <div class="grid-4" id="totals" style="margin-bottom:1.25rem;"></div>
+
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-head"><h2 class="card-title">Members</h2><span class="source">user-service · /api/users</span></div>
+        <div id="members"></div>
+        <form id="memberForm" novalidate>
+          <label class="form-label" for="mName">Add member</label>
+          <input class="form-input" id="mName" placeholder="Name" />
+          <input class="form-input" id="mEmail" placeholder="Email" style="margin-top:0.5rem;" />
+          <button class="btn" type="submit">Register</button>
+          <div class="alert" id="memberAlert"></div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2 class="card-title">Workouts</h2><span class="source">workout-service · /api/workouts</span></div>
+        <div id="workouts"></div>
+        <form id="workoutForm" novalidate>
+          <label class="form-label" for="wUser">Log workout for</label>
+          <select class="form-input" id="wUser"></select>
+          <input class="form-input" id="wType" placeholder="Workout type" style="margin-top:0.5rem;" />
+          <div class="form-row" style="margin-top:0.5rem;">
+            <input class="form-input" id="wDuration" type="number" placeholder="Minutes" />
+            <input class="form-input" id="wCalories" type="number" placeholder="kcal" />
+          </div>
+          <button class="btn" type="submit">Save workout</button>
+          <div class="alert" id="workoutAlert"></div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2 class="card-title">Leaderboard</h2><span class="source">stats-service · /api/stats</span></div>
+        <div id="leaderboard"></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    async function api(path, options = {}) {
+      const res = await fetch('/api' + path, { headers: { 'Content-Type': 'application/json' }, ...options });
+      const data = res.status === 204 ? null : await res.json();
+      if (!res.ok) throw new Error(data.errors ? data.errors.join(', ') : data.error);
+      return data;
+    }
+
+    async function load() {
+      const [users, workouts, stats] = await Promise.all([api('/users'), api('/workouts'), api('/stats')]);
+      const nameOf = id => (users.find(u => u.id === id) || {}).name || '?';
+
+      const t = stats.totals;
+      $('totals').innerHTML = `
+        <div class="card stat"><span>Members</span><strong>${t.members}</strong></div>
+        <div class="card stat"><span>Workouts</span><strong>${t.workouts}</strong></div>
+        <div class="card stat"><span>Minutes</span><strong>${t.minutes}</strong></div>
+        <div class="card stat"><span>Calories</span><strong>${t.calories.toLocaleString()}</strong></div>`;
+
+      $('members').innerHTML = users.map(u => `
+        <div class="list-item"><span class="badge">${esc(u.name[0])}</span>
+          <span class="grow">${esc(u.name)}<div class="sub">${esc(u.goal)}</div></span></div>`).join('');
+
+      $('wUser').innerHTML = users.map(u => `<option value="${u.id}">${esc(u.name)}</option>`).join('');
+
+      $('workouts').innerHTML = workouts.slice(0, 5).map(w => `
+        <div class="list-item"><span class="grow">${esc(w.type)}<div class="sub">${esc(nameOf(w.userId))} · ${w.duration} min</div></span>
+          <span class="tag ${w.intensity}">${w.intensity}</span></div>`).join('');
+
+      $('leaderboard').innerHTML = stats.leaderboard.map((r, i) => `
+        <div class="list-item"><span class="badge">${i + 1}</span>
+          <span class="grow">${esc(r.name)}<div class="sub">${r.workouts} workout${r.workouts === 1 ? '' : 's'} · ${r.minutes} min</div></span>
+          <span class="num">${r.calories} kcal</span></div>`).join('');
+    }
+
+    function showAlert(id, ok, msg) { const a = $(id); a.className = 'alert ' + (ok ? 'ok' : 'err'); a.textContent = msg; }
+
+    $('memberForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        const u = await api('/users', { method: 'POST', body: JSON.stringify({ name: $('mName').value, email: $('mEmail').value }) });
+        showAlert('memberAlert', true, `${u.name} registered (id ${u.id})`);
+        e.target.reset();
+        load();
+      } catch (err) { showAlert('memberAlert', false, err.message); }
+    });
+
+    $('workoutForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await api('/workouts', { method: 'POST', body: JSON.stringify({
+          userId: Number($('wUser').value), type: $('wType').value,
+          duration: Number($('wDuration').value), calories: Number($('wCalories').value || 0)
+        }) });
+        showAlert('workoutAlert', true, 'Workout saved');
+        $('wType').value = $('wDuration').value = $('wCalories').value = '';
+        load();
+      } catch (err) { showAlert('workoutAlert', false, err.message); }
+    });
+
+    load().catch(err => { $('totals').innerHTML = `<div class="card">${esc(err.message)}</div>`; });
+  </script>
+</body>
+</html>

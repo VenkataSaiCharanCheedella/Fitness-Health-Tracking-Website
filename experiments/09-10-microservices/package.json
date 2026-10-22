@@ -1,0 +1,13 @@
+{
+  "name": "fitlife-microservices",
+  "version": "1.0.0",
+  "description": "Experiments 9 and 10: FitLife microservices (user, workout, stats) behind an API gateway",
+  "scripts": {
+    "start": "node deploy.js",
+    "user": "node services/user-service.js",
+    "workout": "node services/workout-service.js",
+    "stats": "node services/stats-service.js",
+    "gateway": "node gateway/gateway.js"
+  },
+  "license": "MIT"
+}
